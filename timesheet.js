@@ -18,15 +18,33 @@ $("#add-train-btn").on("click", function(event) {
   // Grabs user input
   var trainName = $("#train-name-input").val().trim();
   var destination = $("#destination-input").val().trim();
-  var trainTime = moment($("#train-time-input").val().trim(), "DD/MM/YY").format("X");
+  var trainTime = $("#start-input").val();
   var frequency = $("#frequency-input").val().trim();
+  frequency = parseInt(frequency);
+
+  var firstTimeConverted = moment(trainTime, "HH:mm").subtract(1, "years");
+  console.log("TIME CONVERTED: " + firstTimeConverted);
+
+  var diffTime = moment.duration(moment().diff(moment(trainTime, "HH:mm")), 'milliseconds').asMinutes();
+  console.log("DIFFERENCE IN TIME: " + diffTime);
+
+  var timeRemaining = frequency - (Math.floor(diffTime) % frequency);
+  console.log(timeRemaining);
+
+  var nextTrain = moment(diffTime > 0 ? moment().add(timeRemaining, 'minutes' ) : moment(trainTime, "HH:mm")).format("HH:mm");
+  console.log("ARRIVAL TIME: " + nextTrain);
+
+  var minTilTrain = Math.ceil(moment.duration(moment(diffTime > 0 ? moment().add(timeRemaining, 'minutes' ) : moment(trainTime, "HH:mm")).diff(moment()), 'milliseconds').asMinutes());
+  console.log("MINUTES TILL TRAIN: " + minTilTrain);
 
   // Creates local "temporary" object for holding train data
   var newTrain = {
     name: trainName,
     destination: destination,
     startTime: trainTime,
-    frequency: frequency
+    frequency: frequency,
+    nextTrain: nextTrain,
+    minTilTrain: minTilTrain,
   };
 
   // Uploads train data to the database
@@ -37,7 +55,8 @@ $("#add-train-btn").on("click", function(event) {
   console.log(newTrain.destination);
   console.log(newTrain.startTime);
   console.log(newTrain.frequency);
-
+  console.log(newTrain.nextTrain);
+  console.log(newTrain.minTilTrain);
   // Alert
   alert("Train successfully added");
 
@@ -58,34 +77,20 @@ database.ref().on("child_added", function(childSnapshot, prevChildKey) {
   var trainDest = childSnapshot.val().destination;
   var trainStart = childSnapshot.val().startTime;
   var trainFreq = childSnapshot.val().frequency;
+  var arrivalTrain = childSnapshot.val().nextTrain;
+  var minTrain = childSnapshot.val().minTilTrain;
 
   // train Info
   console.log(nameTrain);
   console.log(trainDest);
   console.log(trainStart);
   console.log(trainFreq);
-
-  // Prettify the train start
-  var trainStartPretty = moment.unix(trainStart).format("MM/DD/YY");
-
-  // Calculate the minss away using hardcore math
-  // To calculate the mins away
-  var trainMins = moment().diff(moment.unix(trainStart, "X"), "mins");
-  console.log(trainMins);
-
-  // Calculate the next arrival
-  var minsAway = empMonths * empRate;
-  console.log(minsAway);
+  console.log(arrivalTrain);
+  console.log(minTrain);
 
   // Add each train's data into the table
   $("#train-table > tbody").append("<tr><td>" + nameTrain + "</td><td>" + trainDest + "</td><td>" +
-  trainStartPretty + "</td><td>" + minsAway + "</td><td>" + trainStart + "</td><td>" + trainFreq + "</td></tr>");
+  trainFreq + "</td><td>" + arrivalTrain + "</td><td>" + minTrain + "</td><td>"); //+ "</td><td>" + nextTrain + "</td><td>" + minTilTrain + "</td><td>");
 });
 
-// Example Time Math
-// -----------------------------------------------------------------------------
-// Assume Employee start date of January 1, 2015
-// Assume current date is March 1, 2016
 
-// We know that this is 15 months.
-// Now we will create code in moment.js to confirm that any attempt we use mets this test case
